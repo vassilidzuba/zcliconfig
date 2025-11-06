@@ -35,12 +35,12 @@ pub fn main() !void {
     init(allocator);
     defer deinit(allocator);
 
-    const commands: []const cli.Command = &.{
-        .{ .help = "first command", .short_name = "a", .long_name = "alpha", .ref = cli.ValueRef{ .boolean = &config.doalpha } },
-        .{ .help = "second command", .short_name = "b", .long_name = "beta", .ref = cli.ValueRef{
+    const commands: []const cli.Option = &.{
+        .{ .help = "first option", .short_name = "a", .long_name = "alpha", .ref = cli.ValueRef{ .boolean = &config.doalpha } },
+        .{ .help = "second option", .short_name = "b", .long_name = "beta", .ref = cli.ValueRef{
             .boolean = &config.dobeta,
         }, .hasparams = true, .params = &config.betaargs },
-        .{ .help = "third command", .short_name = "c", .ref = cli.ValueRef{ .boolean = &config.dogamma } },
+        .{ .help = "third option", .short_name = "c", .ref = cli.ValueRef{ .boolean = &config.dogamma } },
     };
 
     try cli.Parser.parseCommandLine(allocator, commands);
