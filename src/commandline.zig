@@ -26,7 +26,6 @@ pub const Parser = struct {
             const arg = args[pos];
 
             if (isShortArg(arg)) {
-                std.debug.print("heheheh\n", .{});
                 lastoption = null;
                 if (parserOpts.allow_multiple_short_options) {
                     for (arg[1.. :0]) |c| {
