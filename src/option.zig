@@ -3,6 +3,12 @@
 
 const std = @import("std");
 
+pub const ConfigurationDescription = struct {
+    program: ?*[:0]const u8 = null,
+    options: []const Option,
+    operands: *std.ArrayList([:0]u8) = undefined,
+};
+
 pub const Option = struct {
     help: []const u8,
     long_name: []const u8 = undefined,

@@ -5,6 +5,7 @@ const std = @import("std");
 const opt = @import("./option.zig");
 const cmdline = @import("./commandline.zig");
 
+pub const ConfigurationDescription = opt.ConfigurationDescription;
 pub const Option = opt.Option;
 pub const ValueType = opt.ValueType;
 pub const ValueRef = opt.ValueRef;
