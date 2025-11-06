@@ -10,6 +10,7 @@ pub const Option = opt.Option;
 pub const ValueType = opt.ValueType;
 pub const ValueRef = opt.ValueRef;
 pub const Parser = cmdline.Parser;
+pub const ParserOpts = cmdline.ParserOpts;
 
 pub fn hello() void {
     std.debug.print("Hello!\n", .{});

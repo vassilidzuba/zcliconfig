@@ -12,7 +12,7 @@ pub const ConfigurationDescription = struct {
 pub const Option = struct {
     help: []const u8,
     long_name: []const u8 = undefined,
-    short_name: []const u8 = undefined,
+    short_name: u8 = undefined,
     ref: ValueRef,
     hasparams: bool = false,
     params: *std.ArrayList([:0]u8) = undefined,

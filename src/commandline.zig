@@ -6,8 +6,12 @@ const cli = @import("root.zig");
 
 const Allocator = std.mem.Allocator;
 
+pub const ParserOpts = struct {
+    allow_multiple_short_options: bool = false,
+};
+
 pub const Parser = struct {
-    pub fn parseCommandLine(a: Allocator, confdesc: *const cli.ConfigurationDescription) !void {
+    pub fn parseCommandLine(a: Allocator, confdesc: *const cli.ConfigurationDescription, parserOpts: ParserOpts) !void {
         const args = try std.process.argsAlloc(a);
         defer std.process.argsFree(a, args);
 
@@ -23,12 +27,26 @@ pub const Parser = struct {
 
             if (isShortArg(arg)) {
                 lastoption = null;
-                for (0..confdesc.options.len) |idx| {
-                    const c = &confdesc.options[idx];
-                    if (std.mem.eql(u8, c.short_name, arg[1.. :0])) {
-                        c.ref.boolean.* = true;
-                        if (c.hasparams) {
-                            lastoption = c;
+                if (parserOpts.allow_multiple_short_options) {
+                    for (arg[1.. :0]) |c| {
+                        for (0..confdesc.options.len) |idx| {
+                            const opt = &confdesc.options[idx];
+                            if (opt.short_name == c) {
+                                opt.ref.boolean.* = true;
+                                if (opt.hasparams) {
+                                    lastoption = opt;
+                                }
+                            }
+                        }
+                    } else {
+                        for (0..confdesc.options.len) |idx| {
+                            const opt = &confdesc.options[idx];
+                            if (opt.short_name == arg[1]) {
+                                opt.ref.boolean.* = true;
+                                if (opt.hasparams) {
+                                    lastoption = opt;
+                                }
+                            }
                         }
                     }
                 }

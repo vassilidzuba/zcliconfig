@@ -50,28 +50,19 @@ pub fn main() !void {
     init(allocator);
     defer deinit(allocator);
 
-    const commands: []const cli.Option = &.{
-        .{ .help = "first option", .short_name = "a", .long_name = "alpha", .ref = cli.ValueRef{ .boolean = &config.doalpha } },
-        .{ .help = "second option", .short_name = "b", .long_name = "beta", .ref = cli.ValueRef{
-            .boolean = &config.dobeta,
-        }, .hasparams = true, .params = &config.betaargs },
-        .{ .help = "third option", .short_name = "c", .ref = cli.ValueRef{ .boolean = &config.dogamma } },
-    };
-    _ = commands;
-
     const configdesc: cli.ConfigurationDescription = .{
         .program = &config.program,
         .options = &.{
-            .{ .help = "first option", .short_name = "a", .long_name = "alpha", .ref = cli.ValueRef{ .boolean = &config.doalpha } },
-            .{ .help = "second option", .short_name = "b", .long_name = "beta", .ref = cli.ValueRef{
+            .{ .help = "first option", .short_name = 'a', .long_name = "alpha", .ref = cli.ValueRef{ .boolean = &config.doalpha } },
+            .{ .help = "second option", .short_name = 'b', .long_name = "beta", .ref = cli.ValueRef{
                 .boolean = &config.dobeta,
             }, .hasparams = true, .params = &config.betaargs },
-            .{ .help = "third option", .short_name = "c", .ref = cli.ValueRef{ .boolean = &config.dogamma } },
+            .{ .help = "third option", .short_name = 'c', .ref = cli.ValueRef{ .boolean = &config.dogamma } },
         },
         .operands = &config.operands,
     };
 
-    try cli.Parser.parseCommandLine(allocator, &configdesc);
+    try cli.Parser.parseCommandLine(allocator, &configdesc, cli.ParserOpts{});
 
     log();
 }
