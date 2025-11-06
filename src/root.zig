@@ -12,6 +12,8 @@ pub const ValueRef = opt.ValueRef;
 pub const Parser = cmdline.Parser;
 pub const ParserOpts = cmdline.ParserOpts;
 
+pub const printHelp = opt.printHelp;
+
 pub fn hello() void {
     std.debug.print("Hello!\n", .{});
 }

@@ -26,6 +26,7 @@ pub const Parser = struct {
             const arg = args[pos];
 
             if (isShortArg(arg)) {
+                std.debug.print("heheheh\n", .{});
                 lastoption = null;
                 if (parserOpts.allow_multiple_short_options) {
                     for (arg[1.. :0]) |c| {
@@ -38,14 +39,14 @@ pub const Parser = struct {
                                 }
                             }
                         }
-                    } else {
-                        for (0..confdesc.options.len) |idx| {
-                            const opt = &confdesc.options[idx];
-                            if (opt.short_name == arg[1]) {
-                                opt.ref.boolean.* = true;
-                                if (opt.hasparams) {
-                                    lastoption = opt;
-                                }
+                    }
+                } else {
+                    for (0..confdesc.options.len) |idx| {
+                        const opt = &confdesc.options[idx];
+                        if (opt.short_name == arg[1]) {
+                            opt.ref.boolean.* = true;
+                            if (opt.hasparams) {
+                                lastoption = opt;
                             }
                         }
                     }
@@ -56,11 +57,13 @@ pub const Parser = struct {
                 lastoption = null;
                 for (0..confdesc.options.len) |idx| {
                     const c = &confdesc.options[idx];
-                    if (std.mem.eql(u8, c.long_name, arg[2.. :0])) {
-                        c.ref.boolean.* = true;
-                        if (c.hasparams) {
-                            std.debug.print(">>>)) {s}\n", .{c.help});
-                            lastoption = c;
+                    if (c.long_name) |long_name| {
+                        if (std.mem.eql(u8, long_name, arg[2.. :0])) {
+                            c.ref.boolean.* = true;
+                            if (c.hasparams) {
+                                std.debug.print(">>>)) {s}\n", .{c.help});
+                                lastoption = c;
+                            }
                         }
                     }
                 }

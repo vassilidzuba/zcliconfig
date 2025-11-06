@@ -7,6 +7,7 @@ const cli = @import("zcliconfig");
 
 var config = struct {
     program: [:0]const u8 = undefined,
+    help: bool = false,
     doalpha: bool = false,
     dobeta: bool = false,
     betaargs: std.ArrayList([:0]u8) = .empty,
@@ -51,18 +52,30 @@ pub fn main() !void {
     defer deinit(allocator);
 
     const configdesc: cli.ConfigurationDescription = .{
+        .desc = "example numero uno",
         .program = &config.program,
         .options = &.{
+            .{ .help = "help", .short_name = 'h', .long_name = "help", .ref = cli.ValueRef{ .boolean = &config.help } },
             .{ .help = "first option", .short_name = 'a', .long_name = "alpha", .ref = cli.ValueRef{ .boolean = &config.doalpha } },
             .{ .help = "second option", .short_name = 'b', .long_name = "beta", .ref = cli.ValueRef{
                 .boolean = &config.dobeta,
             }, .hasparams = true, .params = &config.betaargs },
             .{ .help = "third option", .short_name = 'c', .ref = cli.ValueRef{ .boolean = &config.dogamma } },
+            .{ .help = 
+            \\the fourth option
+            \\has a help of
+            \\several lines
+            , .long_name = "delta", .ref = cli.ValueRef{ .boolean = &config.dogamma } },
         },
         .operands = &config.operands,
     };
 
     try cli.Parser.parseCommandLine(allocator, &configdesc, cli.ParserOpts{});
 
-    log();
+    if (config.help) {
+        cli.printHelp(configdesc);
+    } else {
+        // simulate the program action
+        log();
+    }
 }
