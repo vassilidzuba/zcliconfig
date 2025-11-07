@@ -20,6 +20,8 @@ pub const Parser = struct {
             ps.* = prog;
         }
 
+        try processEnvvar(a, confdesc);
+
         var pos: usize = 1;
         var lastoption: ?*const cli.Option = null;
         while (pos < args.len) {
@@ -89,5 +91,20 @@ pub const Parser = struct {
 
     fn isLongArg(arg: [:0]u8) bool {
         return arg.len > 1 and arg[0] == '-' and arg[1] == '-';
+    }
+
+    fn processEnvvar(a: std.mem.Allocator, confdesc: *const cli.ConfigurationDescription) !void {
+        var envmap = try std.process.getEnvMap(a);
+        defer envmap.deinit();
+
+        for (confdesc.options) |opt| {
+            if (opt.envvar) |envvar| {
+                if (envmap.get(envvar)) |val| {
+                    opt.ref.boolean.* = true;
+                    const val2 = try std.mem.Allocator.dupeZ(a, u8, val);
+                    try opt.params.append(a, val2);
+                }
+            }
+        }
     }
 };

@@ -16,6 +16,7 @@ pub const Option = struct {
     long_name: ?[]const u8 = null,
     short_name: u8 = 0,
     ref: ValueRef,
+    envvar: ?[]const u8 = null,
     hasparams: bool = false,
     params: *std.ArrayList([:0]u8) = undefined,
 };

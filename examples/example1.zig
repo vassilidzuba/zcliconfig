@@ -12,7 +12,11 @@ var config = struct {
     dobeta: bool = false,
     betaargs: std.ArrayList([:0]u8) = .empty,
     dogamma: bool = false,
+    dodelta: bool = false,
     operands: std.ArrayList([:0]u8) = .empty,
+    doepsilon: bool = false,
+    dodzeta: bool = false,
+    dzetaparams: std.ArrayList([:0]u8) = .empty,
 }{};
 
 fn init(_: std.mem.Allocator) void {}
@@ -23,9 +27,15 @@ fn deinit(a: std.mem.Allocator) void {
         a.free(val);
     }
     config.betaargs.deinit(a);
+    for (config.dzetaparams.items) |val| {
+        a.free(val);
+    }
+    config.dzetaparams.deinit(a);
+
     for (config.operands.items) |val| {
         a.free(val);
     }
+
     config.operands.deinit(a);
 }
 
@@ -37,6 +47,12 @@ pub fn log() void {
         print("    {s}\n", .{x});
     }
     print("-> gamma is {any}\n", .{config.dogamma});
+    print("-> delta is {any}\n", .{config.dodelta});
+    print("-> epsilon is {any}\n", .{config.doepsilon});
+    print("-> dzeta is {any}\n", .{config.dodzeta});
+    for (config.dzetaparams.items) |x| {
+        print("    {s}\n", .{x});
+    }
     print("operands\n", .{});
     for (config.operands.items) |x| {
         print("    {s}\n", .{x});
@@ -65,7 +81,11 @@ pub fn main() !void {
             \\the fourth option
             \\has a help of
             \\several lines
-            , .long_name = "delta", .ref = cli.ValueRef{ .boolean = &config.dogamma } },
+            , .long_name = "delta", .ref = cli.ValueRef{ .boolean = &config.dodelta } },
+            .{ .help = "fifth option", .long_name = "epsilon", .envvar = "EPSILON", .ref = cli.ValueRef{
+                .boolean = &config.doepsilon,
+            } },
+            .{ .help = "sixth option", .long_name = "dzeta", .envvar = "DZETA", .params = &config.dzetaparams, .ref = cli.ValueRef{ .boolean = &config.dodzeta } },
         },
         .operands = &config.operands,
     };
