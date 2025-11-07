@@ -1,5 +1,21 @@
 const std = @import("std");
 
+const Example = struct {
+    name: [:0]const u8,
+    path: [:0]const u8,
+};
+
+const examples = [_]Example{
+    .{
+        .name = "example1",
+        .path = "examples/example1.zig",
+    },
+    .{
+        .name = "example2",
+        .path = "examples/example2.zig",
+    },
+};
+
 pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
@@ -26,19 +42,19 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run library tests");
     test_step.dependOn(&run_tests.step);
 
-    {
-        const example1_mod = b.addModule("example1", .{
-            .root_source_file = b.path("examples/example1.zig"),
+    for (examples) |ex| {
+        const example_mod = b.addModule(ex.name, .{
+            .root_source_file = b.path(ex.path),
             .target = target,
             .optimize = optimize,
         });
 
-        const example1 = b.addExecutable(.{
-            .name = "example1",
-            .root_module = example1_mod,
+        const example = b.addExecutable(.{
+            .name = ex.name,
+            .root_module = example_mod,
         });
-        example1.root_module.addImport("zcliconfig", lib_mod);
-        b.installArtifact(example1);
-        b.default_step.dependOn(&example1.step);
+        example.root_module.addImport("zcliconfig", lib_mod);
+        b.installArtifact(example);
+        b.default_step.dependOn(&example.step);
     }
 }

@@ -39,7 +39,7 @@ fn deinit(a: std.mem.Allocator) void {
     config.operands.deinit(a);
 }
 
-pub fn log() void {
+pub fn log() !void {
     print("launching {s}\n", .{config.program});
     print("-> alpha is {any}\n", .{config.doalpha});
     print("-> beta is {any}\n", .{config.dobeta});
@@ -67,15 +67,15 @@ pub fn main() !void {
     init(allocator);
     defer deinit(allocator);
 
-    const configdesc: cli.ConfigurationDescription = .{
-        .desc = "example numero uno",
+    const configdesc: cli.Command = .{
+        .desc = "ejemplo numero uno",
         .program = &config.program,
         .options = &.{
             .{ .help = "help", .short_name = 'h', .long_name = "help", .ref = cli.ValueRef{ .boolean = &config.help } },
             .{ .help = "first option", .short_name = 'a', .long_name = "alpha", .ref = cli.ValueRef{ .boolean = &config.doalpha } },
             .{ .help = "second option", .short_name = 'b', .long_name = "beta", .ref = cli.ValueRef{
                 .boolean = &config.dobeta,
-            }, .hasparams = true, .params = &config.betaargs },
+            }, .hasparams = true, .params = &config.betaargs, .mandatory = true },
             .{ .help = "third option", .short_name = 'c', .ref = cli.ValueRef{ .boolean = &config.dogamma } },
             .{ .help = 
             \\the fourth option
@@ -88,14 +88,15 @@ pub fn main() !void {
             .{ .help = "sixth option", .long_name = "dzeta", .envvar = "DZETA", .params = &config.dzetaparams, .ref = cli.ValueRef{ .boolean = &config.dodzeta } },
         },
         .operands = &config.operands,
+        .exec = log,
     };
 
-    try cli.Parser.parseCommandLine(allocator, &configdesc, cli.ParserOpts{});
+    try cli.parseCommandLine(allocator, &configdesc, cli.ParserOpts{});
 
     if (config.help) {
         cli.printHelp(configdesc);
     } else {
         // simulate the program action
-        log();
+        // try log();
     }
 }

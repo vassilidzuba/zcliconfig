@@ -4,20 +4,24 @@
 const std = @import("std");
 const print = std.debug.print;
 
-pub const ConfigurationDescription = struct {
+pub const Command = struct {
+    id: [:0]const u8 = "",
     desc: []const u8 = undefined,
     program: ?*[:0]const u8 = null,
-    options: []const Option,
+    options: []const Option = &.{},
     operands: *std.ArrayList([:0]u8) = undefined,
+    subcommands: []const Command = &.{},
+    exec: ?*const fn () anyerror!void = null,
 };
 
 pub const Option = struct {
     help: [:0]const u8,
     long_name: ?[]const u8 = null,
-    short_name: u8 = 0,
+    short_name: ?u8 = null,
     ref: ValueRef,
     envvar: ?[]const u8 = null,
     hasparams: bool = false,
+    mandatory: bool = false,
     params: *std.ArrayList([:0]u8) = undefined,
 };
 
@@ -33,14 +37,14 @@ pub const ValueRef = union(ValueType) {
     string: []u8,
 };
 
-pub fn printHelp(desc: ConfigurationDescription) void {
+pub fn printHelp(desc: Command) void {
     const lns = getLongNamleMaxWidth(desc);
     print("{s}\n", .{desc.desc});
     for (desc.options) |opt| {
-        if (opt.short_name == 0) {
-            print("   ", .{});
+        if (opt.short_name) |short_name| {
+            print(" -{c}", .{short_name});
         } else {
-            print(" -{c}", .{opt.short_name});
+            print("   ", .{});
         }
         if (opt.long_name) |long_name| {
             print(" --", .{});
@@ -52,7 +56,7 @@ pub fn printHelp(desc: ConfigurationDescription) void {
     }
 }
 
-fn getLongNamleMaxWidth(desc: ConfigurationDescription) usize {
+fn getLongNamleMaxWidth(desc: Command) usize {
     var size: usize = 0;
     for (desc.options) |opt| {
         if (opt.long_name) |long_name| {
