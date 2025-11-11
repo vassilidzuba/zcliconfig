@@ -13,11 +13,3 @@ pub const ParserOpts = cmdline.ParserOpts;
 
 pub const parseCommandLine = cmdline.parseCommandLine;
 pub const printHelp = opt.printHelp;
-
-pub fn hello() void {
-    std.debug.print("Hello!\n", .{});
-}
-
-test "a test" {
-    std.debug.print("Hi!\n", .{});
-}

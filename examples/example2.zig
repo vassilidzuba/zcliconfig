@@ -10,11 +10,15 @@ fn init(_: std.mem.Allocator) void {}
 fn deinit(_: std.mem.Allocator) void {}
 
 var config1 = struct {
-    a: bool = false,
+    a: ?bool = null,
 }{};
 
 var config2 = struct {
-    b: bool = false,
+    b: ?bool = null,
+}{};
+
+var config = struct {
+    r: ?bool = null,
 }{};
 
 pub fn main() !void {
@@ -27,7 +31,7 @@ pub fn main() !void {
 
     const subcmd1: cli.Command = .{
         .desc = "subcommand 1",
-        .id = "cmd1",
+        .name = "cmd1",
         .exec = runSubcmd1,
         .options = &.{
             .{
@@ -41,7 +45,7 @@ pub fn main() !void {
 
     const subcmd2: cli.Command = .{
         .desc = "subcommand 2",
-        .id = "cmd2",
+        .name = "cmd2",
         .exec = runSubcmd2,
         .options = &.{
             .{
@@ -56,6 +60,14 @@ pub fn main() !void {
     const rootCmd: cli.Command = .{
         .desc = "ejemplo numero dos",
         .subcommands = &.{ subcmd1, subcmd2 },
+        .options = &.{
+            .{
+                .help = "option root",
+                .short_name = 'r',
+                .long_name = "root",
+                .ref = cli.ValueRef{ .boolean = &config.r },
+            },
+        },
     };
 
     try cli.parseCommandLine(allocator, &rootCmd, cli.ParserOpts{});
@@ -63,10 +75,12 @@ pub fn main() !void {
 
 fn runSubcmd1() !void {
     print("running subcommand one\n", .{});
+    print("option r is {any}\n", .{config.r});
     print("option a is {any}\n", .{config1.a});
 }
 
 fn runSubcmd2() !void {
     print("running subcommand two\n", .{});
+    print("option r is {any}\n", .{config.r});
     print("option b is {any}\n", .{config2.b});
 }

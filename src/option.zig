@@ -4,37 +4,42 @@
 const std = @import("std");
 const print = std.debug.print;
 
+/// Description of a Command
 pub const Command = struct {
-    id: [:0]const u8 = "",
+    // subcommand name; not used for root command
+    name: [:0]const u8 = "root",
     desc: []const u8 = undefined,
+    // reference to the program path;
+    // set only for the root command
     program: ?*[:0]const u8 = null,
+    // list of option description
     options: []const Option = &.{},
     operands: *std.ArrayList([:0]u8) = undefined,
     subcommands: []const Command = &.{},
     exec: ?*const fn () anyerror!void = null,
 };
 
+/// description of a single optioon
 pub const Option = struct {
     help: [:0]const u8,
     long_name: ?[]const u8 = null,
     short_name: ?u8 = null,
     ref: ValueRef,
     envvar: ?[]const u8 = null,
-    hasparams: bool = false,
+    //hasparams: bool = false,
     mandatory: bool = false,
-    params: *std.ArrayList([:0]u8) = undefined,
 };
 
 pub const ValueType = enum {
     boolean,
-    integer,
     string,
 };
 
+// reference to a value.
+// That value can be a boolean, an integer or a string
 pub const ValueRef = union(ValueType) {
-    boolean: *bool,
-    integer: *i32,
-    string: []u8,
+    boolean: *?bool,
+    string: *?[:0]const u8,
 };
 
 pub fn printHelp(desc: Command) void {
@@ -90,4 +95,29 @@ fn printString(val: []const u8, size: usize) void {
             print(" ", .{});
         }
     }
+}
+
+test "reference to boolean" {
+    var val: ?bool = null;
+    const ref = ValueRef{ .boolean = &val };
+    ref.boolean.* = true;
+    try std.testing.expect(val.?);
+}
+
+test "reference to string" {
+    var val: ?[:0]const u8 = "beta";
+    try std.testing.expectEqual(val.?, "beta");
+    const ref = ValueRef{ .string = &val };
+    ref.string.* = "alpha";
+    try std.testing.expectEqual(val.?, "alpha");
+}
+
+test "reference to string dynamic" {
+    var ta = std.testing.allocator;
+    var val: ?[:0]const u8 = "beta";
+    try std.testing.expectEqual(val.?, "beta");
+    const ref = ValueRef{ .string = &val };
+    ref.string.* = try std.mem.Allocator.dupeZ(ta, u8, "alpha");
+    try std.testing.expectEqualSlices(u8, val.?, "alpha");
+    ta.free(ref.string.*.?);
 }
