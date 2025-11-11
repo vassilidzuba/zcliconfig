@@ -8,6 +8,7 @@ const Allocator = std.mem.Allocator;
 
 const CommandLineParserError = error{
     ParameterMissing,
+    OptionMissing,
 };
 
 pub const ParserOpts = struct {
@@ -15,13 +16,18 @@ pub const ParserOpts = struct {
 };
 
 pub fn parseCommandLine(a: Allocator, cmd: *const cli.Command, parserOpts: ParserOpts) !void {
-    const args = try std.process.argsAlloc(a);
+    const args = try argsAlloc(a);
     defer std.process.argsFree(a, args);
 
     try parseArguments(a, cmd, args, parserOpts);
 }
 
-pub fn parseArguments(a: Allocator, cmd: *const cli.Command, args: [][:0]u8, parserOpts: ParserOpts) !void {
+// copy slice of u_ to slice of
+//fn copySlices([][:0]u8) [][:8]const u8 {
+
+//}
+
+pub fn parseArguments(a: Allocator, cmd: *const cli.Command, args: [][:0]const u8, parserOpts: ParserOpts) !void {
     if (cmd.program) |ps| {
         const prog = try std.mem.Allocator.dupeZ(a, u8, args[0]);
         ps.* = prog;
@@ -67,6 +73,10 @@ pub fn parseArguments(a: Allocator, cmd: *const cli.Command, args: [][:0]u8, par
         }
 
         if (arg[0] != '-') {
+            if (!skipNextArg) {
+                try checkMandatory(cmd, args[0..pos]);
+            }
+
             if (skipNextArg) {
                 skipNextArg = false;
             } else if (cmd.subcommands.len != 0) {
@@ -87,14 +97,14 @@ pub fn parseArguments(a: Allocator, cmd: *const cli.Command, args: [][:0]u8, par
         pos += 1;
     }
 
-    try checkMandatory(cmd);
+    try checkMandatory(cmd, args);
 
     if (cmd.exec) |exec| {
         try exec();
     }
 }
 
-fn processOptionValue(opt: *const cli.Option, args: [][:0]u8, pos: usize) !bool {
+fn processOptionValue(opt: *const cli.Option, args: [][:0]const u8, pos: usize) !bool {
     const arg: [:0]const u8 = args[pos];
     var param: ?[:0]const u8 = null;
 
@@ -111,7 +121,8 @@ fn processOptionValue(opt: *const cli.Option, args: [][:0]u8, pos: usize) !bool 
                 opt.ref.string.* = p;
                 return true;
             }
-            if (pos >= args.len or args[pos + 1][0] == '-') {
+
+            if (pos >= args.len - 1 or args[pos + 1][0] == '-') {
                 std.debug.print("missing parameter for option {s}\n", .{args[pos]});
                 return error.ParameterMissing;
             }
@@ -151,21 +162,50 @@ fn setValue(ref: *?[:0]const u8, val: [:0]const u8) void {
     ref.*.? = val;
 }
 
-fn checkMandatory(_: *const cli.Command) !void {
-    //    for (confdesc.options) |opt| {
-    //        if (opt.mandatory) {
-    //            if (opt.params.*.items.len == 0) {
-    //                std.debug.print("missing option:", .{});
-    //                if (opt.short_name) |short_name| {
-    //                    std.debug.print(" -{c}", .{short_name});
-    //                }
-    //                if (opt.long_name) |long_name| {
-    //                    std.debug.print(" --{s}", .{long_name});
-    //                }
-    //                std.debug.print("\n", .{});
-    //            }
-    //        }
-    //    }
+fn checkMandatory(command: *const cli.Command, args: [][:0]const u8) !void {
+    for (command.options) |opt| {
+        if (opt.mandatory) {
+            var present: bool = false;
+            for (args) |arg| {
+                if (isOption(&opt, arg)) {
+                    present = true;
+                    break;
+                }
+            }
+            if (!present) {
+                std.debug.print("missing option : ", .{});
+                if (opt.short_name) |sn| {
+                    std.debug.print(" -{c}", .{sn});
+                }
+                if (opt.long_name) |ln| {
+                    std.debug.print(" --{s}", .{ln});
+                }
+                std.debug.print("\n", .{});
+                return CommandLineParserError.OptionMissing;
+            }
+        }
+    }
+}
+
+fn isOption(opt: *const cli.Option, arg: []const u8) bool {
+    if (arg[0] == '-') {
+        if (arg[1] == '-') {
+            if (arg.len > 2 and opt.long_name != null) {
+                if (std.mem.eql(u8, arg[2.. :0], opt.long_name.?)) {
+                    return true;
+                }
+            }
+        } else {
+            // to do : support aggregated options
+            if (opt.short_name) |sn| {
+                if (sn == arg[1]) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 test "options without parameter" {
@@ -298,4 +338,70 @@ test "missing parameter" {
 
     const err = parseArguments(ta, &command, &args, cli.ParserOpts{});
     try std.testing.expectError(error.ParameterMissing, err);
+}
+
+test "missing mandatory option" {
+    const ta = std.testing.allocator;
+
+    var config = struct {
+        alpha: ?bool = null,
+        beta: ?[:0]const u8 = null,
+    }{};
+    var command: cli.Command = .{ .desc = "test", .options = &.{ .{
+        .help = "first option",
+        .short_name = 'a',
+        .long_name = "alpha",
+        .ref = cli.ValueRef{ .boolean = &config.alpha },
+    }, .{
+        .help = "first option",
+        .short_name = 'b',
+        .long_name = "beta",
+        .ref = cli.ValueRef{ .string = &config.beta },
+        .mandatory = true,
+    } } };
+
+    var args = [_][:0]const u8{ "program", "-a" };
+
+    const err = parseArguments(ta, &command, &args, cli.ParserOpts{});
+    try std.testing.expectError(error.OptionMissing, err);
+}
+
+// next function copied from the standard library but
+// returns ![][:0]const u8 instead of ![][:0]u8
+// usefull for testing when the atguments are given as an array of liteerals
+pub fn argsAlloc(allocator: std.mem.Allocator) ![][:0]const u8 {
+    // TODO refactor to only make 1 allocation.
+    var it = try std.process.argsWithAllocator(allocator);
+    defer it.deinit();
+
+    var contents = std.array_list.Managed(u8).init(allocator);
+    defer contents.deinit();
+
+    var slice_list = std.array_list.Managed(usize).init(allocator);
+    defer slice_list.deinit();
+
+    while (it.next()) |arg| {
+        try contents.appendSlice(arg[0 .. arg.len + 1]);
+        try slice_list.append(arg.len);
+    }
+
+    const contents_slice = contents.items;
+    const slice_sizes = slice_list.items;
+    const slice_list_bytes = try std.math.mul(usize, @sizeOf([]u8), slice_sizes.len);
+    const total_bytes = try std.math.add(usize, slice_list_bytes, contents_slice.len);
+    const buf = try allocator.alignedAlloc(u8, .of([]u8), total_bytes);
+    errdefer allocator.free(buf);
+
+    const result_slice_list = std.mem.bytesAsSlice([:0]u8, buf[0..slice_list_bytes]);
+    const result_contents = buf[slice_list_bytes..];
+    @memcpy(result_contents[0..contents_slice.len], contents_slice);
+
+    var contents_index: usize = 0;
+    for (slice_sizes, 0..) |len, i| {
+        const new_index = contents_index + len;
+        result_slice_list[i] = result_contents[contents_index..new_index :0];
+        contents_index = new_index + 1;
+    }
+
+    return result_slice_list;
 }

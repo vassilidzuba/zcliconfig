@@ -26,7 +26,6 @@ pub const Option = struct {
     short_name: ?u8 = null,
     ref: ValueRef,
     envvar: ?[]const u8 = null,
-    //hasparams: bool = false,
     mandatory: bool = false,
 };
 
@@ -43,7 +42,7 @@ pub const ValueRef = union(ValueType) {
 };
 
 pub fn printHelp(desc: Command) void {
-    const lns = getLongNamleMaxWidth(desc);
+    const lns = getLongNameMaxWidth(desc);
     print("{s}\n", .{desc.desc});
     for (desc.options) |opt| {
         if (opt.short_name) |short_name| {
@@ -61,7 +60,7 @@ pub fn printHelp(desc: Command) void {
     }
 }
 
-fn getLongNamleMaxWidth(desc: Command) usize {
+fn getLongNameMaxWidth(desc: Command) usize {
     var size: usize = 0;
     for (desc.options) |opt| {
         if (opt.long_name) |long_name| {
@@ -109,15 +108,5 @@ test "reference to string" {
     try std.testing.expectEqual(val.?, "beta");
     const ref = ValueRef{ .string = &val };
     ref.string.* = "alpha";
-    try std.testing.expectEqual(val.?, "alpha");
-}
-
-test "reference to string dynamic" {
-    var ta = std.testing.allocator;
-    var val: ?[:0]const u8 = "beta";
-    try std.testing.expectEqual(val.?, "beta");
-    const ref = ValueRef{ .string = &val };
-    ref.string.* = try std.mem.Allocator.dupeZ(ta, u8, "alpha");
     try std.testing.expectEqualSlices(u8, val.?, "alpha");
-    ta.free(ref.string.*.?);
 }
