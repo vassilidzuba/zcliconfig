@@ -17,7 +17,7 @@ pub const ParserOpts = struct {
 
 pub fn parseCommandLine(a: Allocator, cmd: *const cli.Command, parserOpts: ParserOpts) !void {
     const args = try argsAlloc(a);
-    defer std.process.argsFree(a, args);
+    defer argsFree(a, args);
 
     try parseArguments(a, cmd, args, parserOpts);
 }
@@ -100,7 +100,7 @@ pub fn parseArguments(a: Allocator, cmd: *const cli.Command, args: [][:0]const u
     try checkMandatory(cmd, args);
 
     if (cmd.exec) |exec| {
-        try exec();
+        try exec(&a);
     }
 }
 
@@ -392,7 +392,7 @@ pub fn argsAlloc(allocator: std.mem.Allocator) ![][:0]const u8 {
     const buf = try allocator.alignedAlloc(u8, .of([]u8), total_bytes);
     errdefer allocator.free(buf);
 
-    const result_slice_list = std.mem.bytesAsSlice([:0]u8, buf[0..slice_list_bytes]);
+    const result_slice_list = std.mem.bytesAsSlice([:0]const u8, buf[0..slice_list_bytes]);
     const result_contents = buf[slice_list_bytes..];
     @memcpy(result_contents[0..contents_slice.len], contents_slice);
 
@@ -404,4 +404,14 @@ pub fn argsAlloc(allocator: std.mem.Allocator) ![][:0]const u8 {
     }
 
     return result_slice_list;
+}
+
+pub fn argsFree(allocator: Allocator, args_alloc: []const [:0]const u8) void {
+    var total_bytes: usize = 0;
+    for (args_alloc) |arg| {
+        total_bytes += @sizeOf([]u8) + arg.len + 1;
+    }
+    const unaligned_allocated_buf = @as([*]const u8, @ptrCast(args_alloc.ptr))[0..total_bytes];
+    const aligned_allocated_buf: []align(@alignOf([]u8)) const u8 = @alignCast(unaligned_allocated_buf);
+    return allocator.free(aligned_allocated_buf);
 }

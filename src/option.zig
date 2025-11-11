@@ -16,7 +16,7 @@ pub const Command = struct {
     options: []const Option = &.{},
     operands: *std.ArrayList([:0]u8) = undefined,
     subcommands: []const Command = &.{},
-    exec: ?*const fn () anyerror!void = null,
+    exec: ?*const fn (*const std.mem.Allocator) anyerror!void = null,
 };
 
 /// description of a single optioon

@@ -73,13 +73,13 @@ pub fn main() !void {
     try cli.parseCommandLine(allocator, &rootCmd, cli.ParserOpts{});
 }
 
-fn runSubcmd1() !void {
+fn runSubcmd1(_: *const std.mem.Allocator) !void {
     print("running subcommand one\n", .{});
     print("option r is {any}\n", .{config.r});
     print("option a is {any}\n", .{config1.a});
 }
 
-fn runSubcmd2() !void {
+fn runSubcmd2(_: *const std.mem.Allocator) !void {
     print("running subcommand two\n", .{});
     print("option r is {any}\n", .{config.r});
     print("option b is {any}\n", .{config2.b});
