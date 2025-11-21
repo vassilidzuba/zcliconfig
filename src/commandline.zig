@@ -100,7 +100,7 @@ pub fn parseArguments(a: Allocator, cmd: *const cli.Command, args: [][:0]const u
     try checkMandatory(cmd, args);
 
     if (cmd.exec) |exec| {
-        try exec(&a);
+        try exec(a);
     }
 }
 

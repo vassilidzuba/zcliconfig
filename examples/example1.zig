@@ -29,7 +29,7 @@ fn deinit(a: std.mem.Allocator) void {
     config.operands.deinit(a);
 }
 
-pub fn log(_: *const std.mem.Allocator) !void {
+pub fn log(_: std.mem.Allocator) !void {
     print("launching {s}\n", .{config.program});
     if (config.alpha) |a| {
         print("-> alpha is {any}\n", .{a});
