@@ -59,9 +59,7 @@ pub fn parseArguments(a: Allocator, cmd: *const cli.Command, args: [][:0]const u
                     }
                 }
             }
-        }
-
-        if (isLongArg(arg)) {
+        } else if (isLongArg(arg)) {
             for (0..cmd.options.len) |idx| {
                 const opt = &cmd.options[idx];
                 if (opt.long_name) |long_name| {
@@ -70,9 +68,7 @@ pub fn parseArguments(a: Allocator, cmd: *const cli.Command, args: [][:0]const u
                     }
                 }
             }
-        }
-
-        if (arg[0] != '-') {
+        } else {
             if (!skipNextArg) {
                 try checkMandatory(cmd, args[0..pos]);
             }
@@ -134,7 +130,7 @@ fn processOptionValue(opt: *const cli.Option, args: [][:0]const u8, pos: usize) 
 }
 
 fn isShortArg(arg: [:0]const u8) bool {
-    return arg.len > 1 and arg[0] == '-' and arg[1] != '-';
+    return arg.len > 1 and arg[0] == '-' and arg[1] != '-' and arg[1] != 0;
 }
 
 fn isLongArg(arg: [:0]const u8) bool {
@@ -364,6 +360,36 @@ test "missing mandatory option" {
 
     const err = parseArguments(ta, &command, &args, cli.ParserOpts{});
     try std.testing.expectError(error.OptionMissing, err);
+}
+
+test "arg is dash" {
+    std.debug.print("arg is dash\n", .{});
+
+    const ta = std.testing.allocator;
+
+    var config = struct {
+        alpha: ?bool = null,
+        operands: std.ArrayList([:0]u8) = .empty,
+    }{};
+    var command: cli.Command = .{ .desc = "test", .operands = &config.operands, .options = &.{
+        .{
+            .help = "first option",
+            .short_name = 'a',
+            .long_name = "alpha",
+            .ref = cli.ValueRef{ .boolean = &config.alpha },
+        },
+    } };
+
+    var args = [_][:0]const u8{ "program", "-a", "alpha", "-" };
+    try parseArguments(ta, &command, &args, cli.ParserOpts{});
+
+    std.debug.print("arguments are:\n", .{});
+
+    for (config.operands.items) |item| {
+        std.debug.print("   {s}\n", .{item});
+        ta.free(item);
+    }
+    config.operands.deinit(ta);
 }
 
 // next function copied from the standard library but
